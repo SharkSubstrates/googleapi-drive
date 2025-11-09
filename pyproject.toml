@@ -1,0 +1,18 @@
+[project]
+name = "googleapi-drive"
+version = "0.1.0"
+description = "Clean Google Drive API v3 client - list, search, download, manage files"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "google-api-python-client>=2.0.0",
+    "google-auth>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["googleapi_drive"]
+
