@@ -33,14 +33,46 @@ class DriveClient:
         else:
             self.service = build('drive', 'v3', credentials=credentials)
         
-        # Get Client User Information
-        result = self.service.about().get(fields="user").execute()
-        if not 'user' in result:
-            raise ValueError("User information not found")
-        self.user_id = result['user']['permissionId']
-        self.user_name = result['user']['displayName']
-        self.user_email = result['user']['emailAddress']
-        self.drives = self.get_drives_info()
+        # Lazy-loaded user info and drives
+        self._user_id = None
+        self._user_name = None
+        self._user_email = None
+        self._drives = None
+
+    def _fetch_user_info(self):
+        """Fetch user information from Drive API (lazy initialization)."""
+        if self._user_id is None:
+            result = self.service.about().get(fields="user").execute()
+            if 'user' not in result:
+                raise ValueError("User information not found")
+            self._user_id = result['user']['permissionId']
+            self._user_name = result['user']['displayName']
+            self._user_email = result['user']['emailAddress']
+    
+    @property
+    def user_id(self) -> str:
+        """Get user ID (lazy-loaded)."""
+        self._fetch_user_info()
+        return self._user_id
+    
+    @property
+    def user_name(self) -> str:
+        """Get user name (lazy-loaded)."""
+        self._fetch_user_info()
+        return self._user_name
+    
+    @property
+    def user_email(self) -> str:
+        """Get user email (lazy-loaded)."""
+        self._fetch_user_info()
+        return self._user_email
+    
+    @property
+    def drives(self) -> List[DriveItem]:
+        """Get drives list (lazy-loaded)."""
+        if self._drives is None:
+            self._drives = self.get_drives_info()
+        return self._drives
 
     def get_user_info(self) -> dict:
         """Get current user information."""
@@ -58,23 +90,23 @@ class DriveClient:
             List of DriveItem objects for each accessible drive.
             First item is always My Drive.
         """
-        self.drives = []
+        drives = []
         
         # Get My Drive - use 'root' as the ID (standard for user's personal drive)
         root_drive = DriveItem(id='root')
         root_drive.populate(name='My Drive')
-        self.drives.append(root_drive)
+        drives.append(root_drive)
         
         # List all Shared Drives
         try:
             shared_drives = self.service.drives().list().execute()
             for drive in shared_drives.get('drives', []):
-                self.drives.append(DriveItem(id=drive['id']))
+                drives.append(DriveItem(id=drive['id']))
         except Exception:
             # If the user doesn't have access to Shared Drives API or no shared drives exist
             pass
         
-        return self.drives
+        return drives
 
     def get_item(self, item_id: str) -> DriveItem:
         """
