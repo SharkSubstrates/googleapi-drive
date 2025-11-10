@@ -613,6 +613,30 @@ class DriveClient:
         except Exception as e:
             raise ValueError(f"Failed to reply to comment {comment_id} for file {file_id}: {str(e)}") from e
 
+    def create_comment(self, file_id: str, content: str) -> dict:
+        """
+        Create a new comment on a file.
+        
+        Args:
+            file_id: The file ID
+            content: The content of the comment
+            
+        Returns:
+            Response dict with comment ID
+            
+        Raises:
+            ValueError: If the comment creation fails
+        """
+        try:
+            response = self.service.comments().create(
+                fileId=file_id,
+                body={'content': content},
+                fields='id'
+            ).execute()
+            return response
+        except Exception as e:
+            raise ValueError(f"Failed to create comment on file {file_id}: {str(e)}") from e
+
     def check_item_access(self, item_id: str) -> bool:
         """
         Check if the current user has access to a file.
